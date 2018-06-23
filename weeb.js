@@ -86,52 +86,10 @@ function startVideo() {
 
 }
 
-var eye = new Sprite({
-	src: "eye.png",
-	totalFrames: 2
+var maw = new Sprite({
+	src:"maw.png",
+	totalFrames: 18
 });
-eye_wiggle = {x:0, y:0};
-
-var mouth = new Sprite({
-	src: "mouth.png",
-	totalFrames: 2
-});
-
-var hair = new Image();
-hair.src = "hair.png";
-var hair2 = new Image();
-hair2.src = "hair2.png";
-var hair_ends = [
-	[0,0],
-	[0,0]
-];
-
-var blush = new Image();
-blush.src = "blush.png";
-
-var sparkle = new Image();
-sparkle.src = "sparkle.png";
-var sparkles = [];
-sparkle_timer = 0;
-
-var bg = new Image();
-bg.src = "bg.png";
-
-var body = new Image();
-body.src = "body.png";
-
-var cherry = new Image();
-cherry.src = "cherry.png";
-var cherries = [];
-for(var i=0; i<50; i++){
-	cherries.push({
-		x: Math.random()*600,
-		y: Math.random()*450,
-		vx: 1+Math.random()*0.5,
-		vy: 1+Math.random()*0.5,
-		a: Math.random()-0.5
-	});
-}
 
 var music = document.getElementById("music");
 
@@ -141,13 +99,71 @@ function drawLoop() {
 
 	// Clear
 	requestAnimationFrame(drawLoop);
-	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+	ctx.fillStyle="white";
+	ctx.fillRect(0,0,ctx.canvas.width, ctx.canvas.height);
+	// ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+	ctx.imageSmoothingEnabled = false;
+
+	var facePositions = ctrack.getCurrentPosition();
+	
+
+	var sms = .2;  // smallening scale factor
+	var smw = vid.width*sms; // small w
+	var smh = vid.height*sms; // small h
+	ctx.drawImage(vid, 0, 0, smw, smh);
+	var imageData = ctx.getImageData(3, 3, smw, smh);
+	data = imageData.data;
+	var rval = 10;
+	if (!facePositions) {
+		var rval = 0;
+	}
+	for (var i = 0; i < imageData.data.length; i += 4) {
+      imageData.data[i]     = rval;     // red
+      imageData.data[i + 1] = .5*imageData.data[i + 1]; // green
+      imageData.data[i + 2] = .5*imageData.data[i + 2]; // blue
+    }
+
+    ctx.putImageData(imageData, 3, 3);
+
+	if (facePositions) {
+		ctx.save()
+		ctx.beginPath();
+		ctx.moveTo(facePositions[60][0]*sms,facePositions[60][1]*sms);
+		ctx.lineTo(facePositions[57][0]*sms,facePositions[57][1]*sms);
+		ctx.moveTo(facePositions[61][0]*sms,facePositions[61][1]*sms);
+		ctx.lineTo(facePositions[56][0]*sms,facePositions[56][1]*sms);
+		ctx.moveTo(facePositions[59][0]*sms,facePositions[59][1]*sms);
+		ctx.lineTo(facePositions[58][0]*sms,facePositions[58][1]*sms);
+		ctx.strokeStyle="#00FFFF";
+		ctx.lineWidth=2;
+		ctx.stroke();
+		ctx.restore()
+	}
+
+
+	if (!facePositions) {
+
+		ctx.font="20px Courier New";
+		// Fill with gradient
+		ctx.fillStyle="red";
+		ctx.fillText("SHOW MAW",0,smh); 
+		ctx.fillText("SCORE: " + ctrack.getScore(), 0, smh+20);
+	}
+	else {
+		ctx.font="20px Courier New";
+		// Fill with gradient
+		ctx.fillStyle="red";
+		ctx.fillText("SCORE: " + ctrack.getScore(), 0, smh+20);
+	}
+
 
 	// Draw Video
 	ctx.save();
 	ctx.scale(-1,1);
 	ctx.translate(-vid.width, 0);
-	ctx.drawImage(vid, 0, 0, 600, 450);
+	ctx.save();
+
+	ctx.restore();
 
 	// Eye Wiggle
 	if(Math.random()<0.04){
@@ -187,15 +203,17 @@ function drawLoop() {
 		labelDOM.style.left = "0px";
 	}
 
+	var faceCenter, faceAngle, faceScale = 1;
+	var mouthDistance = 0;
+
 	// CLMTracker Face...
-	var facePositions = ctrack.getCurrentPosition();
-	if(facePositions){
+	if (facePositions) {
 
 		///////////////////////
 		// Figure out points //
 		///////////////////////
 
-		var faceCenter, faceAngle, faceScale=1;
+		
 
 		// Center
 		faceCenter = [0,0];
@@ -215,257 +233,21 @@ function drawLoop() {
 		var dist = Math.sqrt(dx*dx+dy*dy);
 		faceScale = dist;
 
-		////////////////////
-		// DRAW THE ANIME //
-		////////////////////
+		var mouth_scale = 270;
 
-		// Level 1: nothing
-
-
-		// LEVEL 6: BACKGROUND, SPARKLES, MUSIC
-		if(weebometer.value==6){
-			music.play();
-		}else{
-			music.pause();
-		}
-		if(weebometer.value>=6){
-
-			// clear!
-			tmp_ctx.clearRect(0, 0, tmp_ctx.canvas.width, tmp_ctx.canvas.height);
-			tmp_ctx.save();
-
-			// background
-			tmp_ctx.drawImage(bg, 0, 0);
-
-			// cherries
-			cherries.forEach(function(c){
-
-				c.x += c.vx;
-				c.y += c.vy;
-				if(c.x>650) c.x=-50;
-				if(c.y>500) c.y=-50;
-
-				tmp_ctx.save();
-				tmp_ctx.translate(c.x, c.y);
-				tmp_ctx.rotate(c.a);
-				tmp_ctx.scale(0.5,0.5);
-				tmp_ctx.drawImage(cherry, -25, -25);
-				tmp_ctx.restore();
-
-			});
-
-			// body
-			var body_scale = 50;
-			tmp_ctx.save();
-			tmp_ctx.translate(faceCenter[0], faceCenter[1]);
-			tmp_ctx.scale(faceScale/body_scale, faceScale/body_scale);
-			tmp_ctx.drawImage(body, -125, 25);
-			tmp_ctx.restore();
-
-			// mask
-			tmp_ctx.globalCompositeOperation = "destination-out";
-			tmp_ctx.fillStyle = "#000";
-			tmp_ctx.beginPath();
-			for(var i=0; i<=14; i++){
-				var p = facePositions[i];
-				if(i==0) tmp_ctx.moveTo(p[0], p[1]);
-				else tmp_ctx.lineTo(p[0], p[1]);
-			}
-			var x = (facePositions[0][0]+facePositions[14][0])/2;
-			var y = (facePositions[0][1]+facePositions[14][1])/2;
-			tmp_ctx.arc(
-				x, y,
-				getDistanceBetweenPoints(facePositions, 0, 14)/2,
-				0, Math.PI, true
-			);
-			tmp_ctx.fill();
-
-			tmp_ctx.restore();
-
-			// and draw this ON the main canvas
-			ctx.drawImage(tmpCanvas, 0, 0);
-
-		}
-
-		// LEVEL 2: EYES
-		if(weebometer.value>=2){
-
-			var eye_distance = 30;
-			var eye_scale = 270;
-
-			ctx.save();
-			ctx.translate(facePositions[27][0], facePositions[27][1]);
-			ctx.rotate(faceAngle - Math.PI/2);
-			ctx.scale(faceScale/eye_scale, faceScale/eye_scale);
-				
-				eye.x = -eye_distance;
-				eye.y = 0;
-				eye.frame = 0;
-				eye.draw(ctx);
-				
-				eye.x += eye_wiggle.x;
-				eye.y += eye_wiggle.y;
-				eye.frame = 1;
-				eye.draw(ctx);
-
-			ctx.restore();
-
-			ctx.save();
-			ctx.translate(facePositions[32][0], facePositions[32][1]);
-			ctx.rotate(faceAngle - Math.PI/2);
-			ctx.scale(-faceScale/eye_scale, faceScale/eye_scale);
-				
-				eye.x = -eye_distance;
-				eye.y = 0;
-				eye.frame = 0;
-				eye.draw(ctx);
-				
-				eye.x -= eye_wiggle.x;
-				eye.y += eye_wiggle.y;
-				eye.frame = 1;
-				eye.draw(ctx);
-
-			ctx.restore();
-
-		}
-
-		// LEVEL 3: MOUTH
-		if(weebometer.value>=3){
-			
-			var mouth_scale = 270;
-
-			var mouthPosition = getAverageOfPoints(facePositions,[
-				44, 50, 60, 57
-			]);
-			var mouthDistance = getDistanceBetweenPoints(facePositions, 60, 57);
-
-			ctx.save();
-			ctx.translate(mouthPosition[0], mouthPosition[1]);
-			ctx.rotate(faceAngle - Math.PI/2);
-			ctx.scale(faceScale/mouth_scale, faceScale/mouth_scale);
-			ctx.scale(1, (mouthDistance/faceScale)*2);
-				
-				mouth.x = 0;
-				mouth.y = 15;
-				mouth.frame = 0;
-				mouth.draw(ctx);
-
-			ctx.restore();
-
-		}
-
-		// LEVEL 4: HAIR
-		if(weebometer.value>=4){
-
-			// Hair ends should go to...
-			var end;
-
-			end = hair_ends[0];
-			end[0] = end[0]*0.9 + facePositions[14][0]*0.1;
-			end[1] = end[1]*0.9 + facePositions[14][1]*0.1;
-			var hairAngle1 = Math.atan2(
-				end[0] - facePositions[33][0],
-				end[1] - facePositions[33][1]
-			);
-
-			end = hair_ends[1];
-			end[0] = end[0]*0.9 + facePositions[0][0]*0.1;
-			end[1] = end[1]*0.9 + facePositions[0][1]*0.1;
-			var hairAngle2 = Math.atan2(
-				end[0] - facePositions[33][0],
-				end[1] - facePositions[33][1]
-			);
-
-			// hair
-			var hair_scale = 110;
-			ctx.save();
-			ctx.translate(faceCenter[0], faceCenter[1]);
-			ctx.rotate(faceAngle - Math.PI/2);
-			ctx.scale(faceScale/hair_scale, faceScale/hair_scale);
-			ctx.translate(0, -100);
-				
-				ctx.save();
-				ctx.translate(-100,-100);
-				ctx.rotate(-hairAngle2);
-				ctx.scale(-0.8,0.8);
-				ctx.drawImage(hair2, -125, -50, hair2.width, hair2.height);
-				ctx.restore();
-
-				ctx.save();
-				ctx.translate(100,-100);
-				ctx.rotate(-hairAngle1);
-				ctx.scale(0.8,0.8);
-				ctx.drawImage(hair2, -125, -50, hair2.width, hair2.height);
-				ctx.restore();
-
-				ctx.drawImage(hair, -hair.width/2, -hair.height/2, hair.width, hair.height);
-
-			ctx.restore();
-
-		}
-
-		// LEVEL 5: BLUSH, SPARKLES
-		if(weebometer.value>=5){
-
-			// blush
-			var blush_scale = 190;
-			ctx.save();
-			ctx.translate(faceCenter[0], faceCenter[1]);
-			ctx.rotate(faceAngle - Math.PI/2);
-			ctx.scale(faceScale/blush_scale, faceScale/blush_scale);
-			ctx.translate(0, 10);
-				
-				ctx.drawImage(blush, -blush.width/2, -blush.height/2, blush.width, blush.height);
-
-			ctx.restore();
-
-			// sparkles
-			if(sparkle_timer==0){
-				var angle = (Math.random()*1.5+0.75)*Math.PI;
-				var radius = faceScale*1.75;
-				radius *= (Math.random()*0.75 + 1);
-				var x = faceCenter[0] + Math.cos(angle)*radius;
-				var y = faceCenter[1] + Math.sin(angle)*radius;
-				var spark = {
-					x: x,
-					y: y,
-					life: 0
-				};
-				sparkles.push(spark);
-			}
-			sparkle_timer++;
-			if(sparkle_timer>3) sparkle_timer=0;
-			for(var i=sparkles.length-1; i>=0; i--){
-
-				var spark = sparkles[i];
-				spark.life += 0.02;
-				if(spark.life<1){
-
-					ctx.save();
-					ctx.translate(spark.x, spark.y);
-					var size = 4*((spark.life)*(1-spark.life));
-					ctx.scale(0.5*size, 0.5*size);
-					ctx.globalAlpha = size;
-					ctx.drawImage(sparkle, -50, -50, 100, 100);
-					ctx.restore();
-
-				}else{
-					sparkles.splice(i,1); // BYE. FOREVER.
-				}
-
-			}
-
-		}
-
-
-		////////////////////
-		////////////////////
-		
-
-		// debug
-		//ctrack.draw(ctx.canvas);
-
+		var mouthPosition = getAverageOfPoints(facePositions,[
+			44, 50, 60, 57
+		]);
+		mouthDistance = getDistanceBetweenPoints(facePositions, 60, 57);
 	}
+	ctx.save();
+	
+	ctx.translate(300, 225);
+	ctx.scale(2,2);
+	maw.x=0;maw.y=0;
+	maw.frame = Math.trunc(Math.max(0, Math.min(17, 17*2*mouthDistance/faceScale-3)));
+	maw.draw(ctx);
+	ctx.restore();
 
 	ctx.restore();
 
